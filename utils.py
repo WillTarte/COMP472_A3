@@ -15,13 +15,13 @@ def main():
     outputFileNameOV = 'NB-BOW-OV.csv'
     outputFileNameFV = 'NB-BOW-FV.csv'
 
-    generateOV(scaledDown, outputFileNameOV)
-    generateFV(scaledDown, outputFileNameFV)
+    print(generateOV(scaledDown, outputFileNameOV))
+    print(generateFV(scaledDown, outputFileNameFV))
     
 
 def generateOV(fileName, outputFileName):
     V = addSmoothing(generateCountVector(fileName))
-    V.to_csv(path_or_buf=outputFileName, sep="\t")
+    return V
 
 def generateFV(fileName, outputFileName):
     V = generateCountVector(fileName)
@@ -30,8 +30,8 @@ def generateFV(fileName, outputFileName):
     for col in cols:
         V[col].values[V[col] < 2] = 0
     V = addSmoothing(V)
-    V.to_csv(path_or_buf=outputFileName, sep="\t")
-    print(V)
+    return V
+  
 
 def generateCountVector(fileName):
     data = getData(fileName)
