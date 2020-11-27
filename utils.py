@@ -15,8 +15,9 @@ def main():
     outputFileNameOV = 'NB-BOW-OV.csv'
     outputFileNameFV = 'NB-BOW-FV.csv'
 
-    print(generateOV(scaledDown, outputFileNameOV))
-    print(generateFV(scaledDown, outputFileNameFV))
+    # print(generateOV(scaledDown, outputFileNameOV))
+    # print(generateFV(scaledDown, outputFileNameFV))
+    addLabels(scaledDown, generateOV(scaledDown, outputFileNameOV))
     
 
 def generateOV(fileName, outputFileName):
@@ -24,18 +25,33 @@ def generateOV(fileName, outputFileName):
     return V
 
 def generateFV(fileName, outputFileName):
-    V = generateCountVector(fileName)
+    V = addSmoothing(generateCountVector(fileName))
     cols = [col for col in V.columns]
 
     for col in cols:
         V[col].values[V[col] < 2] = 0
-    V = addSmoothing(V)
+    # Do we still smooth for the values that are 0?
+    # V = addSmoothing(V)
     return V
-  
 
+def addLabels(fileName, V):
+    columnsArray = ['tweet_id', 'q1_label',	'q2_label', 'q3_label',
+        'q4_label', 'q5_label', 'q6_label', 'q7_label'
+    ]
+    data = getData(fileName)
+    for col in columnsArray:
+        if (col == 'tweet_id'):
+            V.insert(0, col, data[col])
+        else:
+            V.insert(len(V.columns), col, data[col])
+    print(V)
+    V.to_csv('test.csv', sep='\t')
+
+
+  
 def generateCountVector(fileName):
     data = getData(fileName)
-    textArray = [row['text'] for index,row in data.iterrows() ]
+    textArray = [row['text'] for index,row in data.iterrows()]
     countVector = CountVectorizer()
     countVectorText = countVector.fit_transform(textArray)
     V = pd.DataFrame(countVectorText.toarray(), columns=countVector.get_feature_names())
@@ -45,11 +61,8 @@ def addSmoothing(V):
     V = V + 0.01
     return V
 
-    
-
 def getData(fileName):
-    dataset = pd.read_csv(fileName, sep='\t')
-    # print(dataset.toString())
+    dataset = pd.read_csv(fileName, sep='\t', keep_default_na=False)
     return dataset
 
 def cleanText(text):
