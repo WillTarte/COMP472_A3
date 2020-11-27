@@ -19,7 +19,7 @@ def main():
     # print(generateFV(scaledDown, outputFileNameFV))
 
     addLabels(scaledDown, generateOV(scaledDown))
-    addLabels(scaledDown, generateFV(scaledDown))   
+    # addLabels(scaledDown, generateFV(scaledDown))   
 
 def generateOV(fileName):
     V = addSmoothing(generateCountVector(fileName))
@@ -38,9 +38,7 @@ def generateFV(fileName):
     return V
 
 def addLabels(fileName, V):
-    columnsArray = ['tweet_id', 'q1_label',	'q2_label', 'q3_label',
-        'q4_label', 'q5_label', 'q6_label', 'q7_label'
-    ]
+    columnsArray = ['tweet_id', 'q1_label']
     data = getData(fileName)
     for col in columnsArray:
         if (col == 'tweet_id'):
