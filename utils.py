@@ -4,33 +4,52 @@ import nltk
 # python -m nltk.downloader stopwords
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
 
 def main():
     """ Utils """
     testFileName = './covid_test_public.tsv'
     trainingFileName = './covid_training.tsv'
+    scaledDown = './scaled_down.tsv'
 
-    data = getData(trainingFileName)
-    columns = list(data)
-    # print(columns)
-    # If we choose to use countVectorizing or tf-idf to do our calculation, we should attempt to remove stop words
-    # However it can lower our accuracy, we can test this later
-    stopWords = stopwords.words('english')
+    outputFileNameOV = 'NB-BOW-OV.csv'
+    outputFileNameFV = 'NB-BOW-FV.csv'
+
+    generateOV(scaledDown, outputFileNameOV)
+    generateFV(scaledDown, outputFileNameFV)
+    
+
+def generateOV(fileName, outputFileName):
+    V = addSmoothing(generateCountVector(fileName))
+    V.to_csv(path_or_buf=outputFileName, sep="\t")
+
+def generateFV(fileName, outputFileName):
+    V = generateCountVector(fileName)
+    cols = [col for col in V.columns]
+
+    for col in cols:
+        V[col].values[V[col] < 2] = 0
+    V = addSmoothing(V)
+    V.to_csv(path_or_buf=outputFileName, sep="\t")
+    print(V)
+
+def generateCountVector(fileName):
+    data = getData(fileName)
     textArray = [row['text'] for index,row in data.iterrows() ]
-    # print(stmt_docs)
-    # print(stmt_docs)
-    for i in range(len(textArray)): 
-        textArray[i] = cleanText(textArray[i])
-    print(textArray)
+    countVector = CountVectorizer()
+    countVectorText = countVector.fit_transform(textArray)
+    V = pd.DataFrame(countVectorText.toarray(), columns=countVector.get_feature_names())
+    return V
 
-    vec_s = CountVectorizer()
-    X_s = vec_s.fit_transform(textArray)
-    tdm_s = pd.DataFrame(X_s.toarray(), columns=vec_s.get_feature_names())
-    # print(tdm_s)
+def addSmoothing(V):
+    V = V + 0.01
+    return V
+
+    
 
 def getData(fileName):
     dataset = pd.read_csv(fileName, sep='\t')
-    # print(dataset)
+    # print(dataset.toString())
     return dataset
 
 def cleanText(text):
@@ -46,6 +65,10 @@ def cleanText(text):
     # Converting all to lower case
     text = text.lower()
     # Remove Punctuation?
+
+    # If we choose to use countVectorizing or tf-idf to do our calculation, we should attempt to remove stop words
+    # However it can lower our accuracy, we can test this later
+    stopWords = stopwords.words('english')
 
     return text
 
