@@ -17,20 +17,23 @@ def main():
 
     # print(generateOV(scaledDown, outputFileNameOV))
     # print(generateFV(scaledDown, outputFileNameFV))
-    addLabels(scaledDown, generateOV(scaledDown, outputFileNameOV))
-    
 
-def generateOV(fileName, outputFileName):
+    addLabels(scaledDown, generateOV(scaledDown))
+    addLabels(scaledDown, generateFV(scaledDown))   
+
+def generateOV(fileName):
     V = addSmoothing(generateCountVector(fileName))
     return V
 
-def generateFV(fileName, outputFileName):
+def generateFV(fileName):
+    """ If we need to smooth values that are below 0 remove addSmoothing function call below"""
     V = addSmoothing(generateCountVector(fileName))
     cols = [col for col in V.columns]
 
     for col in cols:
         V[col].values[V[col] < 2] = 0
-    # Do we still smooth for the values that are 0?
+
+    """ Do we still smooth for the values that are 0? """
     # V = addSmoothing(V)
     return V
 
@@ -45,6 +48,7 @@ def addLabels(fileName, V):
         else:
             V.insert(len(V.columns), col, data[col])
     print(V)
+    # Only used for demoing/testing code
     V.to_csv('test.csv', sep='\t')
 
 
