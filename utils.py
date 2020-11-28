@@ -18,8 +18,11 @@ def main():
     # print(generateOV(scaledDown, outputFileNameOV))
     # print(generateFV(scaledDown, outputFileNameFV))
 
-    addLabels(scaledDown, generateOV(scaledDown))
-    # addLabels(scaledDown, generateFV(scaledDown))   
+    OV = addLabels(scaledDown, generateOV(scaledDown))
+    FV = addLabels(scaledDown, generateFV(scaledDown))   
+
+    print(OV)
+    print(FV)
 
 def generateOV(fileName):
     V = addSmoothing(generateCountVector(fileName))
@@ -38,19 +41,18 @@ def generateFV(fileName):
     return V
 
 def addLabels(fileName, V):
-    columnsArray = ['tweet_id', 'q1_label']
+    columnsArray = ['q1_label']
     data = getData(fileName)
     for col in columnsArray:
         if (col == 'tweet_id'):
             V.insert(0, col, data[col])
         else:
             V.insert(len(V.columns), col, data[col])
-    print(V)
     # Only used for demoing/testing code
     V.to_csv('test.csv', sep='\t')
+    # Uncomment it if you want to see file output
+    return V
 
-
-  
 def generateCountVector(fileName):
     data = getData(fileName)
     textArray = [row['text'] for index,row in data.iterrows()]
@@ -64,7 +66,7 @@ def addSmoothing(V):
     return V
 
 def getData(fileName):
-    dataset = pd.read_csv(fileName, sep='\t', keep_default_na=False)
+    dataset = pd.read_csv(fileName, sep='\t')
     return dataset
 
 def cleanText(text):
