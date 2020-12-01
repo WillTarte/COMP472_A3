@@ -1,4 +1,5 @@
 from typing import Dict, List
+from pandas import DataFrame
 
 class NaiveBayesBOWClassifier:
 
@@ -7,24 +8,27 @@ class NaiveBayesBOWClassifier:
         self.labels = None
         self.smoothing = smoothing
 
-    def train(self, features: List[Dict[str, int]], labels: List[int]):
-        self.features = features
-        self.labels = labels
+    def train(self, data: DataFrame):
+        self.features = data[:, :-1]
+        self.labels = data['q1_label']
 
-        # TODO training
-        # For each class (yes/no) calculate the prior probabilities P(H_i)
-        # For each word in the vocabulary (using the frequencies) calculate the conditional probabilities
+       
+        # Calculate priors (classes)
         self.yes_count = 0
         self.no_count = 0
-        for label in labels:
-            if label == 0:
+        for label in self.labels.items():
+            if label == "no":
                 self.no_count += 1
-            elif label == 1:
+            elif label == "yes":
                 self.yes_count += 1
             else:
                 raise Exception
-        self.yes_prior = self.yes_count / float(len(labels))
-        self.no_prior = self.no_count/ float(len(labels))
+        self.yes_prior = self.yes_count / float(len(self.labels))
+        self.no_prior = self.no_count / float(len(self.labels))
+
+        # for all classes c_i
+        #   for all words w_j in the vocab
+        #       compute P(w_j | c_i) = count(w_j, c_i) / Sum_j(count(w_j, c_i))
 
 
     #def predict(self, )
