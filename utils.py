@@ -31,9 +31,10 @@ def generateOV(fileName):
 def generateFV(fileName):
     V = generateCountVector(fileName)
     cols = [col for col in V.columns]
-
     for col in cols:
-        V[col].values[V[col] < 2] = 0
+        wordFrequency = V[col].sum()
+        if wordFrequency < 2:
+            V[col].values[:] = 0
     return V
 
 def addLabels(fileName, V):
