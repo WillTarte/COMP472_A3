@@ -18,31 +18,27 @@ def main():
     # print(generateOV(scaledDown, outputFileNameOV))
     # print(generateFV(scaledDown, outputFileNameFV))
 
-    OV = addLabels(scaledDown, generateOV(scaledDown))
-    FV = addLabels(scaledDown, generateFV(scaledDown))   
+    #Training
+    OV = addLabels(trainingFileName, generateOV(trainingFileName))
+    FV = addLabels(scaledDown, generateFV(scaledDown))
 
-    print(OV)
-    print(FV)
+    generatePredictionData(testFileName)
 
 def generateOV(fileName):
-    V = addSmoothing(generateCountVector(fileName))
+    V = generateCountVector(fileName)
     return V
 
 def generateFV(fileName):
-    """ If we need to smooth values that are below 0 remove addSmoothing function call below"""
-    V = addSmoothing(generateCountVector(fileName))
+    V = generateCountVector(fileName)
     cols = [col for col in V.columns]
 
     for col in cols:
         V[col].values[V[col] < 2] = 0
-
-    """ Do we still smooth for the values that are 0? """
-    # V = addSmoothing(V)
     return V
 
 def addLabels(fileName, V):
     columnsArray = ['q1_label']
-    data = getData(fileName)
+    data = getData(fileName, True)
     for col in columnsArray:
         if (col == 'tweet_id'):
             V.insert(0, col, data[col])
@@ -54,19 +50,19 @@ def addLabels(fileName, V):
     return V
 
 def generateCountVector(fileName):
-    data = getData(fileName)
+    data = getData(fileName, True)
     textArray = [row['text'] for index,row in data.iterrows()]
     countVector = CountVectorizer()
     countVectorText = countVector.fit_transform(textArray)
     V = pd.DataFrame(countVectorText.toarray(), columns=countVector.get_feature_names())
     return V
 
-def addSmoothing(V):
-    V = V + 0.01
-    return V
-
-def getData(fileName):
-    dataset = pd.read_csv(fileName, sep='\t')
+def getData(fileName, hasHeaders):
+    dataset = None
+    if hasHeaders:
+        dataset = pd.read_csv(fileName, sep='\t')
+    else:
+        dataset = pd.read_csv(fileName, sep='\t', header=None)
     return dataset
 
 def cleanText(text):
@@ -88,6 +84,19 @@ def cleanText(text):
     stopWords = stopwords.words('english')
 
     return text
+
+def generatePredictionData(fileName):
+    predictionData = []
+    data = getData(fileName, False)
+    tweetIdArray = [row[0] for index,row in data.iterrows()]
+    textArray = [row[1] for index,row in data.iterrows()]
+    countVector = CountVectorizer()
+
+    for i in range(len(tweetIdArray)):
+        analyze = countVector.build_analyzer()
+        predictionData.append((tweetIdArray[i], analyze(textArray[i])))
+        
+    return predictionData
 
 
 if __name__ == "__main__":
