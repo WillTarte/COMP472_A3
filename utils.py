@@ -34,7 +34,7 @@ def generateFV(fileName):
     for col in cols:
         wordFrequency = V[col].sum()
         if wordFrequency < 2:
-            V[col].values[:] = 0
+            V.drop([col], axis=1, inplace=True)
     return V
 
 def addLabels(fileName, V):
@@ -98,6 +98,62 @@ def generatePredictionData(fileName):
         predictionData.append((tweetIdArray[i], analyze(textArray[i])))
         
     return predictionData
+
+def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataFrame):
+
+    true_positive = 0
+    false_positive = 0
+    true_negative = 0
+    false_negative = 0
+
+    with open("trace_" + name + ".txt", 'w') as trace_file:
+        for index, row in predictions.iterrows():
+            trace_file.write(str(row["tweet_id"]) + "  ")
+            trace_file.write(row["class"] + "  ")
+            trace_file.write(str(row["score"]) + "  ")
+            true_label = testData.loc[testData["tweet_id"] == row["tweet_id"]]["q1_label"]
+            true_label = true_label.iloc[0]
+            trace_file.write(true_label + " ")
+
+            if row["class"] == true_label and row["class"] == "yes":
+                true_positive += 1
+            elif row["class"] == true_label and row["class"] == "no":
+                true_negative += 1
+            elif row["class"] != true_label and row["class"] == "yes":
+                false_positive += 1
+            else:
+                false_negative += 1
+
+            trace_file.write("correct" if row["class"] == true_label else "wrong")
+            trace_file.write("\r")
+        
+        print("Outputted " + "trace_" + name + ".txt")
+
+    with open("eval_" + name + ".txt", 'w') as eval_file:
+
+        # Accuracy
+        eval_file.write(str((true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)))
+        eval_file.write("\r")
+
+        # Precision
+        eval_file.write(str(true_positive / (true_positive + false_positive)))
+        eval_file.write("  ")
+        eval_file.write(str(true_negative / (true_negative + false_negative)))
+        eval_file.write("\r")
+
+        # Recall
+        eval_file.write(str(true_positive / (true_positive + false_negative)))
+        eval_file.write("  ")
+        eval_file.write(str(true_negative / (true_negative + false_positive)))
+        eval_file.write("\r")
+
+        # F1 measure
+        eval_file.write(str(true_positive / (true_positive + (1/2)*(false_positive + false_negative))))
+        eval_file.write("  ")
+        eval_file.write(str(true_negative / (true_negative + (1/2)*(false_negative + false_positive))))
+        eval_file.write("\r")
+
+        print("Outputted " + "eval_" + name + ".txt")
 
 
 if __name__ == "__main__":

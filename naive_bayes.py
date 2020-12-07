@@ -81,32 +81,29 @@ class NaiveBayesCovidTweetClassifier:
 if __name__ == "__main__":
 
     OV = utils.addLabels("covid_training.tsv", utils.generateOV("covid_training.tsv"))
-    print(OV.head())
-
-    nbClassifier = NaiveBayesCovidTweetClassifier(len(OV.columns) - 1)
-    print(nbClassifier)
-    
-    nbClassifier.train(OV)
-    print(nbClassifier)
+    FV = utils.addLabels("covid_training.tsv", utils.generateFV("covid_training.tsv"))
 
     testData = utils.generatePredictionData("covid_test_public.tsv")
     testDataFrame = utils.getData("covid_test_public.tsv", False)
     testDataFrame.columns = ["tweet_id", "tweet", "q1_label", "q2_label", "q3_label", "q4_label", "q5_label", "q6_label", "q7label"]
     testDataFrame = testDataFrame[["tweet_id", "q1_label"]]
-    
-    predictions = nbClassifier.predict(testData)
 
-    with open("trace_NB-BOW-OV.txt", 'w') as trace_file:
-        for index, row in predictions.iterrows():
-            trace_file.write(str(row["tweet_id"]) + "  ")
-            trace_file.write(row["class"] + "  ")
-            trace_file.write(str(row["score"]) + "  ")
-            true_label = testDataFrame.loc[testDataFrame["tweet_id"] == row["tweet_id"]]["q1_label"]
-            print(true_label)
-            true_label = true_label.iloc[0]
-            trace_file.write(true_label + " ")
-            trace_file.write("correct" if row["class"] == true_label else "wrong")
-            trace_file.write("\r")
+    nbClassifierOV = NaiveBayesCovidTweetClassifier(len(OV.columns) - 1)
+    nbClassifierOV.train(OV)
+
+    nbClassifierFV = NaiveBayesCovidTweetClassifier(len(FV.columns) - 1)
+    nbClassifierFV.train(FV)
+    
+    predictionsOV = nbClassifierOV.predict(testData)
+    predictionsFV = nbClassifierFV.predict(testData)
+
+    utils.generateOutputFiles("NB-BOW-OV", predictionsOV, testDataFrame)
+    utils.generateOutputFiles("NB-BOW-FV", predictionsFV, testDataFrame)
+
+
+
+    
+    
 
 
 
