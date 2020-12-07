@@ -113,16 +113,17 @@ def evaluateModel(model, prediction, target):
     """
     t_yes = np.array([x.item() for x in target])
     t_no = np.array([(lambda x: 1 if x == 0 else 0)(n) for n in t_yes])
-    p = np.array([pred(x) for x in prediction])
+    p_yes = np.array([pred(x) for x in prediction])
+    p_no = np.array([(lambda x: 1 if x == 0 else 0)(n) for n in p_yes])
     try:
-        pre_yes = precision_score(t_yes, p)
-        rec_yes = recall_score(t_yes, p)
-        f1_yes = f1_score(t_yes, p)
-        acc = accuracy_score(t_yes, p)
+        pre_yes = precision_score(t_yes, p_yes)
+        rec_yes = recall_score(t_yes, p_yes)
+        f1_yes = f1_score(t_yes, p_yes)
+        acc = accuracy_score(t_yes, p_yes)
 
-        pre_no = precision_score(t_no, p)
-        rec_no = recall_score(t_no, p)
-        f1_no = f1_score(t_no, p)
+        pre_no = precision_score(t_no, p_no)
+        rec_no = recall_score(t_no, p_no)
+        f1_no = f1_score(t_no, p_no)
     except ValueError:
         f1_yes = pre_yes = rec_yes = 0
         f1_no = pre_no = rec_no = 0
