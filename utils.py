@@ -60,14 +60,14 @@ def generateCountVector(fileName):
     for i in data['text']:
         words = i;
         word = words.split(' ')
-        # for s in word:
-        #     s = s.translate(str.maketrans('', '', string.punctuation))
-        #     s = cleanText(data['text'])
-        # # print(word), 
-        # word = list(filter(None, word))
-        # word = list(filter(bool, word))
-        # word = list(filter(len, word))
-        # word = list(filter(lambda item: item, word))
+        for s in word:
+            s = s.translate(str.maketrans('', '', string.punctuation))
+            s = cleanText(data['text'])
+        # print(word), 
+        word = list(filter(None, word))
+        word = list(filter(bool, word))
+        word = list(filter(len, word))
+        word = list(filter(lambda item: item, word))
 
         d = {}
         for w in word:
@@ -120,9 +120,9 @@ def generatePredictionData(fileName):
         for j in data[1]:
             words = j;
             word = words.split(' ')
-            # for s in word:
-            #     s = s.translate(str.maketrans('', '', string.punctuation))
-            #     s = cleanText(data['text'])
+            for s in word:
+                s = s.translate(str.maketrans('', '', string.punctuation))
+                s = cleanText(data['text'])
             # # print(word), 
             word = list(filter(None, word))
             word = list(filter(bool, word))
