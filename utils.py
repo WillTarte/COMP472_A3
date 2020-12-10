@@ -3,8 +3,9 @@ import nltk
 # Run this command if you are getting module errors from NLTK:
 # python -m nltk.downloader stopwords
 from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
+import string
 
 def main():
     """ Utils """
@@ -22,7 +23,7 @@ def main():
     OV = addLabels(trainingFileName, generateOV(trainingFileName))
     FV = addLabels(scaledDown, generateFV(scaledDown))
 
-    generatePredictionData(testFileName)
+    generatePredictionData(trainingFileName)
 
 def generateOV(fileName):
     V = generateCountVector(fileName)
@@ -52,10 +53,34 @@ def addLabels(fileName, V):
 
 def generateCountVector(fileName):
     data = getData(fileName, True)
-    textArray = [row['text'] for index,row in data.iterrows()]
-    countVector = CountVectorizer()
-    countVectorText = countVector.fit_transform(textArray)
-    V = pd.DataFrame(countVectorText.toarray(), columns=countVector.get_feature_names())
+  
+    data['text'] = cleanText(data['text'])
+    V = pd.DataFrame()
+    data['text'] = data['text'].str.lower()
+    for i in data['text']:
+        words = i;
+        word = words.split(' ')
+        # for s in word:
+        #     s = s.translate(str.maketrans('', '', string.punctuation))
+        #     s = cleanText(data['text'])
+        # # print(word), 
+        # word = list(filter(None, word))
+        # word = list(filter(bool, word))
+        # word = list(filter(len, word))
+        # word = list(filter(lambda item: item, word))
+
+        d = {}
+        for w in word:
+            d[w] = d.get(w, 0) + 1
+
+        # # print(d)
+        # rows = []
+        # V = pd.DataFrame()
+        V = V.append(d, ignore_index=True)
+        # V = pd.DataFrame.from_dict(d, d.keys())
+
+    V = V.fillna(0)        
+
     return V
 
 def getData(fileName, hasHeaders):
@@ -90,12 +115,20 @@ def generatePredictionData(fileName):
     predictionData = []
     data = getData(fileName, False)
     tweetIdArray = [row[0] for index,row in data.iterrows()]
-    textArray = [row[1] for index,row in data.iterrows()]
-    countVector = CountVectorizer()
-
+    data[1] = data[1].str.lower()
     for i in range(len(tweetIdArray)):
-        analyze = countVector.build_analyzer()
-        predictionData.append((tweetIdArray[i], analyze(textArray[i])))
+        for j in data[1]:
+            words = j;
+            word = words.split(' ')
+            # for s in word:
+            #     s = s.translate(str.maketrans('', '', string.punctuation))
+            #     s = cleanText(data['text'])
+            # # print(word), 
+            word = list(filter(None, word))
+            word = list(filter(bool, word))
+            word = list(filter(len, word))
+            analyze = word
+        predictionData.append((tweetIdArray[i], analyze))
         
     return predictionData
 
@@ -134,7 +167,8 @@ def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataF
         # Accuracy
         eval_file.write(str((true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)))
         eval_file.write("\r")
-
+        print(true_negative)
+        print(false_negative)
         # Precision
         eval_file.write(str(true_positive / (true_positive + false_positive)))
         eval_file.write("  ")
