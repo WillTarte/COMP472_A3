@@ -21,16 +21,19 @@ def main():
 
     #Training
     # OV = addLabels(trainingFileName, generateOV(trainingFileName))
-    OV = generateOV(trainingFileName)
+    OV = generateOV(trainingFileName, 'ovOutput.csv')
+    FV = generateFV(trainingFileName, 'fvOutput.csv')
+
     # FV = addLabels(scaledDown, generateFV(scaledDown))
 
     generatePredictionData(trainingFileName)
 
-def generateOV(fileName):
+def generateOV(fileName, outputFileName):
     V = generateCountVector(fileName)
+    V.to_csv(outputFileName, sep='\t')
     return V
 
-def generateFV(fileName):
+def generateFV(fileName, outputFileName):
     V = generateCountVector(fileName)
     cols = [col for col in V.columns]
     for col in cols:
@@ -38,6 +41,7 @@ def generateFV(fileName):
         if col != 'q1_label':
             if int(wordFrequency) < 2:
                 V.drop([col], axis=1, inplace=True)
+    V.to_csv(outputFileName, sep='\t')
     return V
 
 def addLabels(fileName, V):
@@ -49,7 +53,7 @@ def addLabels(fileName, V):
         else:
             V.insert(len(V.columns), col, data[col])
     # Only used for demoing/testing code
-    V.to_csv('test.csv', sep='\t')
+    
     # Uncomment it if you want to see file output
     return V
 
@@ -64,8 +68,8 @@ def generateCountVector(fileName):
         wordsArr = data['text'][i]
         wordsArr = wordsArr.lower()
         words = wordsArr.split(' ')
-        words = [''.join(c for c in s if c not in string.punctuation) for s in words]
-        words = [s for s in words if s]
+        # words = [''.join(c for c in s if c not in string.punctuation) for s in words]
+        # words = [s for s in words if s]
 
         d = {}
 
@@ -80,8 +84,9 @@ def generateCountVector(fileName):
 
     V = V.fillna(0)  
     V = V.reindex(sorted(V.columns), axis=1)   
-    V.apply(pd.to_numeric, errors='ignore')
-    print(V)   
+    # V = V.apply(pd.to_numeric, errors='ignore')
+    V = V[ [ col for col in V.columns if col != 'q1_label' ] + ['q1_label'] ]
+    print(V) 
     return V
 
 def getData(fileName, hasHeaders):
@@ -100,8 +105,8 @@ def generatePredictionData(fileName):
         for wordsArr in data[1]:
             wordsArr = wordsArr.lower()
             words = wordsArr.split(' ')
-            words = [''.join(c for c in s if c not in string.punctuation) for s in words]
-            words = [s for s in words if s]
+            # words = [''.join(c for c in s if c not in string.punctuation) for s in words]
+            # words = [s for s in words if s]
         predictionData.append((tweetIdArray[i], words))
         
     return predictionData

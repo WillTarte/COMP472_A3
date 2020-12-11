@@ -80,8 +80,8 @@ class NaiveBayesCovidTweetClassifier:
 
 if __name__ == "__main__":
 
-    OV = utils.generateOV("covid_training.tsv")
-    FV = utils.generateFV("covid_training.tsv")
+    OV = utils.getData("ovOutput.csv", True)
+    FV = utils.getData("fvOutput.csv", True)
 
     testData = utils.generatePredictionData("covid_test_public.tsv")
     testDataFrame = utils.getData("covid_test_public.tsv", False)
