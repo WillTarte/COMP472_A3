@@ -1,115 +1,71 @@
 import pandas as pd
-import nltk
-# Run this command if you are getting module errors from NLTK:
-# python -m nltk.downloader stopwords
-from nltk.corpus import stopwords
-# from sklearn.feature_extraction.text import CountVectorizer
-import numpy as np
-import string
+from typing import Dict, List, Tuple, Any
 
-def main():
-    """ Utils """
-    testFileName = './covid_test_public.tsv'
-    trainingFileName = './covid_training.tsv'
-    scaledDown = './scaled_down.tsv'
+def generateTrainingData(filename: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
-    outputFileNameOV = 'NB-BOW-OV.csv'
-    outputFileNameFV = 'NB-BOW-FV.csv'
+    data = getData(filename, True)
+    print("Got raw data")
 
-    # print(generateOV(scaledDown, outputFileNameOV))
-    # print(generateFV(scaledDown, outputFileNameFV))
+    OV = generateCountDataFrame(data)
+    print("Got OV bow data")
 
-    #Training
-    # OV = addLabels(trainingFileName, generateOV(trainingFileName))
-    OV = generateOV(trainingFileName, 'ovOutput.csv')
-    FV = generateFV(trainingFileName, 'fvOutput.csv')
+    FV = OV.copy()
 
-    # FV = addLabels(scaledDown, generateFV(scaledDown))
-
-    generatePredictionData(trainingFileName)
-
-def generateOV(fileName, outputFileName):
-    V = generateCountVector(fileName)
-    V.to_csv(outputFileName, sep='\t')
-    return V
-
-def generateFV(fileName, outputFileName):
-    V = generateCountVector(fileName)
-    cols = [col for col in V.columns]
+    cols = [col for col in FV.columns]
     for col in cols:
-        wordFrequency = V[col].sum()
+        wordFrequency = FV[col].sum()
         if col != 'q1_label':
             if int(wordFrequency) < 2:
-                V.drop([col], axis=1, inplace=True)
-    V.to_csv(outputFileName, sep='\t')
-    return V
-
-def addLabels(fileName, V):
-    columnsArray = ['q1_label']
-    data = getData(fileName, True)
-    for col in columnsArray:
-        if (col == 'tweet_id'):
-            V.insert(0, col, data[col])
-        else:
-            V.insert(len(V.columns), col, data[col])
-    # Only used for demoing/testing code
+                FV.drop([col], axis=1, inplace=True)
     
-    # Uncomment it if you want to see file output
-    return V
+    print("Got FV bow data")
 
-def generateCountVector(fileName):
-    data = getData(fileName, True)
+    return (OV, FV)
+
+def generateCountDataFrame(data: pd.DataFrame) -> pd.DataFrame:
   
-    # data['text'] = cleanText(data['text'])
-    V = pd.DataFrame()
-    # data['text'] = data['text'].str.lower()
-    for i in range(len(data['text'])):
-        print(i)
-        wordsArr = data['text'][i]
-        wordsArr = wordsArr.lower()
-        words = wordsArr.split(' ')
-        # words = [''.join(c for c in s if c not in string.punctuation) for s in words]
-        # words = [s for s in words if s]
+    data_cleaned = pd.DataFrame()
+    
+    for _, row in data.iterrows():
+        words = row["text"].lower().split(" ")
+        tweet_word_frequencies: Dict[str, Any]= dict()
+        tweet_word_frequencies["q1_label"] = row["q1_label"]
+        
+        for word in words:
+            if word not in tweet_word_frequencies.keys():
+                tweet_word_frequencies[word] = 1
+            else:
+                tweet_word_frequencies[word] += 1
+                
+        for word in tweet_word_frequencies.keys():
+            if word not in data_cleaned.columns:
+                data_cleaned.insert(0, word, 0)
+                
+        data_cleaned = data_cleaned.append(tweet_word_frequencies, ignore_index=True)
 
-        d = {}
+    return data_cleaned.fillna(0)
 
-        for w in words:
-            d[w] = d.get(w, 0) + 1
-            # print(d)
-        d['q1_label'] = data['q1_label'][i]
-
-
-        V = V.append(d, ignore_index=True)
-        # V = pd.DataFrame.from_dict(d, d.keys())
-
-    V = V.fillna(0)  
-    V = V.reindex(sorted(V.columns), axis=1)   
-    # V = V.apply(pd.to_numeric, errors='ignore')
-    V = V[ [ col for col in V.columns if col != 'q1_label' ] + ['q1_label'] ]
-    print(V) 
-    return V
-
-def getData(fileName, hasHeaders):
+def getData(fileName: str, hasHeaders: bool) -> pd.DataFrame:
     dataset = None
     if hasHeaders:
         dataset = pd.read_csv(fileName, sep='\t')
     else:
         dataset = pd.read_csv(fileName, sep='\t', header=None)
+        dataset.columns = ["tweet_id", "text", "q1_label", "q2_label", "q3_label", "q4_label", "q5_label", "q6_label", "q7_label"]
+    
+    dataset.set_index("tweet_id", inplace=True)
+    dataset.drop(["q2_label", "q3_label", "q4_label", "q5_label", "q6_label", "q7_label"], axis=1, inplace=True)
+
     return dataset
 
-def generatePredictionData(fileName):
-    predictionData = []
+def generatePredictionData(fileName: str) -> List[Tuple[str, List[str]]]:
     data = getData(fileName, False)
-    tweetIdArray = [row[0] for index,row in data.iterrows()]
-    for i in range(len(tweetIdArray)):
-        for wordsArr in data[1]:
-            wordsArr = wordsArr.lower()
-            words = wordsArr.split(' ')
-            # words = [''.join(c for c in s if c not in string.punctuation) for s in words]
-            # words = [s for s in words if s]
-        predictionData.append((tweetIdArray[i], words))
-        
-    return predictionData
+    prediction_data: List[Tuple[str, List[str]]] = list()
+
+    for tweet_id, row in data.iterrows():
+        prediction_data.append((tweet_id, row["text"].lower().split(" ")))
+    
+    return prediction_data
 
 def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataFrame):
 
@@ -123,8 +79,7 @@ def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataF
             trace_file.write(str(row["tweet_id"]) + "  ")
             trace_file.write(row["class"] + "  ")
             trace_file.write(str(row["score"]) + "  ")
-            true_label = testData.loc[testData["tweet_id"] == row["tweet_id"]]["q1_label"]
-            true_label = true_label.iloc[0]
+            true_label = testData.loc[row["tweet_id"]]["q1_label"]
             trace_file.write(true_label + " ")
 
             if row["class"] == true_label and row["class"] == "yes":
@@ -146,10 +101,7 @@ def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataF
         # Accuracy
         eval_file.write(str((true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)))
         eval_file.write("\r")
-        print(true_positive)
-        print(true_negative)
-        print(false_negative)
-        print(false_positive)
+
         # Precision
         eval_file.write(str(true_positive / (true_positive + false_positive)))
         eval_file.write("  ")
@@ -169,7 +121,3 @@ def generateOutputFiles(name: str, predictions: pd.DataFrame, testData: pd.DataF
         eval_file.write("\r")
 
         print("Outputted " + "eval_" + name + ".txt")
-
-
-if __name__ == "__main__":
-    main()

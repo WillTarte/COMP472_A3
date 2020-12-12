@@ -24,27 +24,26 @@ class NaiveBayesCovidTweetClassifier:
         assert len(data.columns) == self.vocab_length + 1, "The vocab length and the number of words in the training data don't match!"
         self.trained = True
 
-        self.features: DataFrame = data.iloc[:, :-2]
-        self.labels: Series = data['q1_label']
+        labels: Series = data['q1_label']
+        yes_tweets = data[data['q1_label'] == "yes"].drop("q1_label", axis=1)
+        no_tweets = data[data['q1_label'] == "no"].drop("q1_label", axis=1)
 
         # for all classes c_i
         #   computer P(c_i) = count(documents in c_i) / count(all documents)
-        self.yes_count: int = (self.labels[self.labels == "yes"]).count() 
-        self.no_count: int = (self.labels[self.labels == "no"]).count() 
-        self.yes_prior: float = float(self.yes_count) / self.labels.size
-        self.no_prior: float = float(self.no_count) / self.labels.size
+        self.yes_count: int = (labels[labels == "yes"]).count() 
+        self.no_count: int = (labels[labels == "no"]).count() 
+        self.yes_prior: float = float(self.yes_count) / labels.size
+        self.no_prior: float = float(self.no_count) / labels.size
 
         # for all classes c_i
         #   for all words w_j in the vocab
         #       compute P(w_j | c_i) = count(w_j, c_i) / Sum_j(count(w_j, c_i))
-        for word, count in (data[data['q1_label'] == "yes"]).iloc[:, :-2].items():
+        for word, count in yes_tweets.items():
             word_prob = (count.sum() + self.smoothing) / (self.yes_count + (self.smoothing * self.vocab_length))
-            #print("word " + word + " has yes prob " + str(word_prob))
             self.yes_word_probs[word] = word_prob
         
-        for word, count in (data[data['q1_label'] == "no"]).iloc[:, :-2].items():
+        for word, count in no_tweets.items():
             word_prob = (count.sum() + self.smoothing) / (self.no_count + (self.smoothing * self.vocab_length))
-            #print("word " + word + " has no prob " + str(word_prob))
             self.no_word_probs[word] = word_prob
 
     def predict(self, X: List[Tuple[str, List[str]]]) -> DataFrame:
@@ -56,7 +55,6 @@ class NaiveBayesCovidTweetClassifier:
 
         output: DataFrame = DataFrame(columns=["tweet_id", "class", "score"])
 
-        # TODO do we calculate duplicates?
         # for all classes c_i
         #   score(c_i) = P(c_i)
         #   for all words w_j in the tweet
@@ -78,24 +76,35 @@ class NaiveBayesCovidTweetClassifier:
         else:
             return "Model has been trained. Yes prior: " + str(self.yes_prior) + ". No prior: " + str(self.no_prior) + "."
 
+
 if __name__ == "__main__":
 
-    OV = utils.getData("ovOutput.csv", True)
-    FV = utils.getData("fvOutput.csv", True)
+    OV, FV = utils.generateTrainingData("covid_training.tsv")
+
+    print("Generated training data")
 
     testData = utils.generatePredictionData("covid_test_public.tsv")
     testDataFrame = utils.getData("covid_test_public.tsv", False)
-    testDataFrame.columns = ["tweet_id", "tweet", "q1_label", "q2_label", "q3_label", "q4_label", "q5_label", "q6_label", "q7label"]
-    testDataFrame = testDataFrame[["tweet_id", "q1_label"]]
+    
+    print("Generated necessary testing data")
 
     nbClassifierOV = NaiveBayesCovidTweetClassifier(len(OV.columns) - 1)
     nbClassifierOV.train(OV)
 
+    print("Trained on OV")
+
     nbClassifierFV = NaiveBayesCovidTweetClassifier(len(FV.columns) - 1)
     nbClassifierFV.train(FV)
+
+    print("Trained on FV")
     
     predictionsOV = nbClassifierOV.predict(testData)
+
+    print("Generated predictions for OV")
+
     predictionsFV = nbClassifierFV.predict(testData)
+
+    print("Generated predictions for FV")
 
     utils.generateOutputFiles("NB-BOW-OV", predictionsOV, testDataFrame)
     utils.generateOutputFiles("NB-BOW-FV", predictionsFV, testDataFrame)
