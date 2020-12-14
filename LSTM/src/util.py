@@ -45,7 +45,7 @@ class TweetDataset(torch.utils.data.Dataset):
     annotations
     """
     def __init__(self, ds_loc, embeddings_model):
-        self.df = read_csv(ds_loc, sep="\t")
+        self.df = read_csv(ds_loc, sep="\t", header=None)
         self.lexicon = Lexicon(embeddings_model)
 
     def __len__(self):
